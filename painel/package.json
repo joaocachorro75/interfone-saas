@@ -1,0 +1,49 @@
+{
+  "name": "interfone-painel-web",
+  "version": "1.0.0",
+  "description": "Painel Interfone SaaS com Softphone WebRTC",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1",
+    "react-scripts": "5.0.1",
+    "sip.js": "^0.21.2",
+    "axios": "^1.6.2",
+    "socket.io-client": "^4.7.2",
+    "zustand": "^4.4.7",
+    "react-hot-toast": "^2.4.1",
+    "tailwindcss": "^3.3.6",
+    "lucide-react": "^0.294.0",
+    "react-modal": "^3.16.1",
+    "date-fns": "^2.30.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "@tailwindcss/forms": "^0.5.7"
+  }
+}

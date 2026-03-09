@@ -1,0 +1,71 @@
+{
+  "name": "interfone-saas",
+  "version": "1.0.0",
+  "type": "docker-compose",
+  "services": {
+    "api": {
+      "name": "interfone-api",
+      "image": "interfone-api:latest",
+      "build": {
+        "context": "./api",
+        "dockerfile": "Dockerfile"
+      },
+      "ports": ["3000:3000"],
+      "env": [
+        "NODE_ENV=production",
+        "PORT=3000",
+        "DB_HOST=database",
+        "DB_NAME=interfone_saas",
+        "DB_USER=saas_user",
+        "DB_PASS=${DB_PASS}",
+        "JWT_SECRET=${JWT_SECRET}"
+      ],
+      "depends_on": ["database"],
+      "healthcheck": {
+        "test": ["CMD", "curl", "-f", "http://localhost:3000/api/health"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      },
+      "volumes": [
+        {
+          "name": "api_logs",
+          "path": "/app/logs"
+        }
+      ]
+    },
+    "database": {
+      "name": "interfone-db",
+      "image": "mysql:8.0",
+      "ports": ["3306:3306"],
+      "env": [
+        "MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}",
+        "MYSQL_DATABASE=interfone_saas",
+        "MYSQL_USER=saas_user",
+        "MYSQL_PASSWORD=${DB_PASS}"
+      ],
+      "volumes": [
+        {
+          "name": "mysql_data",
+          "path": "/var/lib/mysql"
+        },
+        {
+          "name": "init_sql",
+          "path": "/docker-entrypoint-initdb.d"
+        }
+      ]
+    },
+    "nginx": {
+      "name": "interfone-nginx",
+      "image": "nginx:alpine",
+      "ports": ["80:80", "443:443"],
+      "depends_on": ["api"],
+      "volumes": [
+        {
+          "name": "nginx_config",
+          "path": "/etc/nginx"
+        }
+      ]
+    }
+  }
+}

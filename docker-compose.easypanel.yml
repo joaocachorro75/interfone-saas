@@ -1,0 +1,82 @@
+# Docker Compose OTIMIZADO para Easypanel
+# Versão simplificada e compatível
+
+version: '3.8'
+
+services:
+  api:
+    build: ./api
+    container_name: interfone-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=interfone_saas
+      - DB_USER=saas_user
+      - DB_PASS=${DB_PASS:-SaasPass2024}
+      - JWT_SECRET=${JWT_SECRET:-InterfoneSecret2024}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - api_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - interfone
+
+  db:
+    image: mysql:8.0
+    container_name: interfone-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS:-RootInterfone2024}
+      - MYSQL_DATABASE=interfone_saas
+      - MYSQL_USER=saas_user
+      - MYSQL_PASSWORD=${DB_PASS:-SaasPass2024}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASS:-RootInterfone2024}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - interfone
+
+  # Nginx - Opcional, use se precisar de dominio customizado
+  nginx:
+    image: nginx:alpine
+    container_name: interfone-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks:
+      - interfone
+
+volumes:
+  mysql_data:
+    driver: local
+  api_logs:
+    driver: local
+
+networks:
+  interfone:
+    driver: bridge

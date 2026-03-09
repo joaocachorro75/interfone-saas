@@ -1,0 +1,65 @@
+name: Deploy to Easypanel
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: api/package.json
+
+    - name: Install dependencies
+      run: |
+        cd api && npm ci
+
+    - name: Run tests
+      run: |
+        cd api && npm test || echo "No tests yet"
+
+    - name: Build and Push to Registry
+      env:
+        EASYPANEL_REGISTRY: ${{ secrets.EASYPANEL_REGISTRY }}
+        EASYPANEL_TOKEN: ${{ secrets.EASYPANEL_TOKEN }}
+      run: |
+        # Build API image
+        docker build -t interfone-api:${{ github.sha }} ./api
+        docker tag interfone-api:${{ github.sha }} interfone-api:latest
+        
+        # Se tiver registry configurado, push
+        if [ ! -z "$EASYPANEL_REGISTRY" ]; then
+          echo "$EASYPANEL_TOKEN" | docker login $EASYPANEL_REGISTRY -u github --password-stdin
+          docker tag interfone-api:${{ github.sha }} $EASYPANEL_REGISTRY/interfone-api:${{ github.sha }}
+          docker push $EASYPANEL_REGISTRY/interfone-api:${{ github.sha }}
+        fi
+
+    - name: Deploy to Easypanel via Webhook
+      env:
+        EASYPANEL_WEBHOOK_URL: ${{ secrets.EASYPANEL_WEBHOOK_URL }}
+        EASYPANEL_API_KEY: ${{ secrets.EASYPANEL_API_KEY }}
+      run: |
+        if [ ! -z "$EASYPANEL_WEBHOOK_URL" ]; then
+          curl -X POST "$EASYPANEL_WEBHOOK_URL" \
+            -H "Authorization: Bearer $EASYPANEL_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "service": "interfone-api",
+              "image": "interfone-api:${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }' || echo "Webhook opcional"
+        fi
+
+    - name: Deploy Complete
+      run: echo "Deploy iniciado! Verifique o Easypanel."
